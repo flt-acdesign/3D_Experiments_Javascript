@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Babylon.js Random Points on Plane with Gradient Background</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; /* Hide scrollbars */
+        }
+        /* Gradient background */
+        canvas { 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(to top, #0077be, #00bfff); /* Blue gradient */
+        }
+        .input-group {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="input-group">
+        <input type="number" id="pointCountInput" placeholder="Enter number of points">
+        <button id="createPointsBtn">Create Points</button>
+        <button id="resetSceneBtn">Reset Scene</button>
+    </div>
+    <canvas id="renderCanvas"></canvas>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/materialsLibrary/babylon.gridMaterial.min.js"></script>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+        var pcs, scene;
+
+        var createScene = function () {
+            scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color4(0, 0, 0, 0); // Use transparent clear color
+
+            var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 0, new BABYLON.Vector3.Zero(), scene);
+            camera.setPosition(new BABYLON.Vector3(0, 50, -100));
+            camera.attachControl(canvas, true);
+
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene);
+            light.intensity = 0.7;
+
+            var ground = BABYLON.Mesh.CreateGround("ground1", 100, 100, 2, scene);
+            var groundMaterial = new BABYLON.GridMaterial("groundMat", scene);
+            groundMaterial.mainColor = new BABYLON.Color3(0.678, 0.847, 0.902); // Light blue
+            groundMaterial.lineColor = new BABYLON.Color3(0.8, 0.8, 0.8); // Light grey
+            ground.material = groundMaterial;
+
+            // Create an empty PCS (PointsCloudSystem)
+            pcs = new BABYLON.PointsCloudSystem("pcs", 1, scene);
+
+            return scene;
+        };
+
+        scene = createScene();
+
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+
+        
+        function createPoints() {
+            var inputVal = document.getElementById("pointCountInput").value;
+            var numberOfPoints = parseInt(inputVal, 10);
+
+            if (isNaN(numberOfPoints)) {
+                alert("Please enter a valid number of points.");
+                return;
+            }
+
+            // Dispose old PCS if exists
+            if (pcs) {
+                pcs.dispose();
+                pcs = new BABYLON.PointsCloudSystem("pcs", 1, scene);
+            }
+
+            // Add points to PCS in a loop
+            for (let i = 0; i < numberOfPoints; i++) {
+                pcs.addPoints(1, function (particle, i) {
+                    particle.position = new BABYLON.Vector3(Math.random() * 50 - 25, 0.1, Math.random() * 50 - 25);
+                    particle.color = new BABYLON.Color4(Math.random(), Math.random(), Math.random(), 1);
+                });
+            }
+
+            // Build the PCS mesh
+            pcs.buildMeshAsync();
+
+            // Reset the camera position
+            scene.activeCamera.setPosition(new BABYLON.Vector3(0, 50, -100));
+        }
+
+        document.getElementById("createPointsBtn").addEventListener("click", createPoints);
+
+        function resetScene() {
+            if (pcs) {
+                pcs.dispose();
+            }
+            pcs = new BABYLON.PointsCloudSystem("pcs", 1, scene);
+            scene.activeCamera.setPosition(new BABYLON.Vector3(0, 50, -100));
+        }
+
+        document.getElementById("resetSceneBtn").addEventListener("click", resetScene);
+
+    </script>
+</body>
+</html>

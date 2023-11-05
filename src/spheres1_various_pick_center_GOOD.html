@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Babylon.js - Center of Rotation and Sphere Interaction</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- Reference the Babylon.js library -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            // Get the canvas DOM element
+            var canvas = document.getElementById('renderCanvas');
+
+            // Load the 3D engine
+            var engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer: true, stencil: true});
+
+            // CreateScene function that creates and returns the scene
+            var createScene = function () {
+                // Create a basic BJS Scene object
+                var scene = new BABYLON.Scene(engine);
+
+                // Create an ArcRotateCamera
+                var camera = new BABYLON.ArcRotateCamera('camera', -Math.PI / 2, Math.PI / 2.5, 10, BABYLON.Vector3.Zero(), scene);
+                camera.attachControl(canvas, true);
+
+                // Create a HemisphericLight
+                var light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(1, 1, 0), scene);
+
+                // Create a built-in "ground" shape
+                var ground = BABYLON.MeshBuilder.CreateGround('ground', {width: 10, height: 10, subdivisions: 2}, scene);
+
+                // Axis lines for X, Y, Z
+                var axisX, axisY, axisZ;
+
+                // Create a point at the center of rotation (COR)
+                var corPoint = BABYLON.MeshBuilder.CreateSphere('corPoint', {diameter: 0.2}, scene);
+                corPoint.material = new BABYLON.StandardMaterial('corMaterial', scene);
+                corPoint.material.diffuseColor = new BABYLON.Color3(1, 1, 0); // Yellow color
+                corPoint.position = BABYLON.Vector3.Zero();
+
+                // Function to update the position of the axes and COR
+                var updateAxesAndCOR = function (targetPosition) {
+                    if (axisX) {
+                        axisX.dispose();
+                        axisY.dispose();
+                        axisZ.dispose();
+                    }
+                    var axisSize = 5;
+                    var makeAxis = function (name, start, end, color) {
+                        var points = [
+                            start,
+                            end,
+                            end.subtract(new BABYLON.Vector3(0.1, 0, 0)),
+                            end,
+                            end.subtract(new BABYLON.Vector3(0, 0.1, 0))
+                        ];
+                        var axis = BABYLON.MeshBuilder.CreateLines(name, {points: points}, scene);
+                        axis.color = color;
+                        return axis;
+                    };
+
+                    axisX = makeAxis('axisX', targetPosition, targetPosition.add(new BABYLON.Vector3(axisSize, 0, 0)), new BABYLON.Color3(1, 0, 0));
+                    axisY = makeAxis('axisY', targetPosition, targetPosition.add(new BABYLON.Vector3(0, axisSize, 0)), new BABYLON.Color3(0, 1, 0));
+                    axisZ = makeAxis('axisZ', targetPosition, targetPosition.add(new BABYLON.Vector3(0, 0, axisSize)), new BABYLON.Color3(0, 0, 1));
+
+                    // Update COR position
+                    corPoint.position = targetPosition;
+                };
+
+                // Initial update of axes and COR at the origin
+                updateAxesAndCOR(BABYLON.Vector3.Zero());
+
+                // Function to create a random sphere
+                var createRandomSphere = function (id) {
+                    var sphere = BABYLON.MeshBuilder.CreateSphere('sphere' + id, {diameter: 1}, scene);
+                    sphere.position = new BABYLON.Vector3(Math.random() * 8 - 4, 0.5, Math.random() * 8 - 4);
+                    sphere.material = new BABYLON.StandardMaterial('material' + id, scene);
+                    sphere.material.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
+
+                    // When the sphere is picked, update the center of rotation and COR
+                    sphere.actionManager = new BABYLON.ActionManager(scene);
+                    sphere.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function (evt) {
+                        var pickedMesh = evt.meshUnderPointer;
+                        camera.setTarget(corPoint.position);
+                        updateAxesAndCOR(pickedMesh.position);
+                    }));
+                };
+
+                // Create 10 random spheres
+                for (var i = 0; i < 10; i++) {
+                    createRandomSphere(i);
+                }
+
+                return scene;
+            };
+
+            // Call the createScene function
+            var scene = createScene();
+
+            // Run the render loop to animate the scene
+            engine.runRenderLoop(function () {
+                scene.render();
+            });
+
+            // Watch for browser/canvas resize events
+            window.addEventListener('resize', function () {
+                engine.resize();
+            });
+        });
+    </script>
+</body>
+</html>
