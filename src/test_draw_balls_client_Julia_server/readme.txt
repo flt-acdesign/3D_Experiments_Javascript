@@ -1,0 +1,1 @@
+Baseline example of client-server program where Julia emits a string containing a JSON file with the point coordinates and Javascript receives the string, parses it into JSON and draws the points as balls
