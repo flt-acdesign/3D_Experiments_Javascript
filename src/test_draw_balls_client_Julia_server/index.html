@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Babylon.js Scene with Points and Lines</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden;
+        }
+        canvas { 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(to top, #003366, #6699ff);
+        }
+        .input-group {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="input-group">
+        <input type="number" id="pointCountInput" placeholder="Enter number of points">
+        <button id="createPointsBtn">Create Points and Lines</button>
+        <button id="resetSceneBtn">Reset Scene</button>
+
+
+        <input id="number" placeholder="Input a number" >
+        <button id="submit">Square</button>
+        <h4>Outputs</h4>
+        <ul id="list"></ul>
+
+
+
+    </div>
+    <canvas id="renderCanvas"></canvas>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/materialsLibrary/babylon.gridMaterial.min.js"></script>
+
+
+    <script src="surface1.js"></script>
+    <script src="surface2.js"></script>
+    <script src="points_lines.js"></script>
+    <script src="ground_grid_axes.js"></script>
+    <script src="GET_REST_points_to_plot.js"></script>
+    <script src="REST_CLIENT_POINTS_string_GOOD.js"></script>
+
+    <script>
+
+
+// define generic functions for plotting surfaces
+function f_surf1 (x,z) { return (x * x + z * z)}
+function f_surf2 (x,z) { return (x  + z ) * 100}
+
+
+
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+        var scene = []
+
+        createScene = function () {
+            scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color4(0, 0, 0, 0); // Transparent clear color to see the gradient background
+
+            var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 150, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            //var light1 = new BABYLON.HemisphericLight("hemiLight", new BABYLON.Vector3(0, 1, 0), scene);
+
+            // Add a directional light to the scene
+            var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(1, -2, 1), scene);
+            light.position = new BABYLON.Vector3(20, 40, 20);
+
+            var shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+            shadowGenerator.useBlurExponentialShadowMap = true;
+            shadowGenerator.blurKernel = 32;
+            return [scene, shadowGenerator, light]
+        }
+       
+        scene_array =  createScene()       
+
+        scene = scene_array[0]
+        shadowGenerator = scene_array[1]
+        light = scene_array[2]
+
+// Add objects to the scene
+        create_ground(200, light, shadowGenerator) 
+
+//        surface_smooth(f_surf2, scene)
+//        surface_wireframe(scene, shadowGenerator)
+
+
+        //plot_REST_points(scene)  // show points received from the server as spheres
+
+        create_points(scene)  // generate random points and connect them with random lines
+
+        engine.runRenderLoop(function () {
+            scene.render()
+        })
+
+        window.addEventListener("resize", function () {
+            engine.resize()
+        })
+    </script>
+
+
+</body>
+</html>
