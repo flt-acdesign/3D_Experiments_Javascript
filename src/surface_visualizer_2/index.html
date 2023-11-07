@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Babylon.js Scene with Points and Lines</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden;
+        }
+        canvas { 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(to top, #003366, #6699ff);
+        }
+        .input-group {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="input-group">
+        <input type="number" id="pointCountInput" placeholder="Enter number of points">
+        <button id="createPointsBtn">Create Points and Lines</button>
+        <button id="resetSceneBtn">Reset Scene</button>
+
+        <input id="number" placeholder="Input a number" >
+        <button id="submit">Square</button>
+        <h4>Outputs</h4>
+        <ul id="list"></ul>
+    </div>
+
+    <canvas id="renderCanvas"></canvas>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/materialsLibrary/babylon.gridMaterial.min.js"></script>
+    <!-- Include the Babylon.js gizmos library -->
+    <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+    <!-- Include the Babylon.js loaders library -->
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+
+
+    <!---- Local files -->
+    <script src="Create_surface.js"></script>
+    <script src="points_lines.js"></script>
+    <script src="ground_grid_axes.js"></script>
+    <script src="GET_REST_points_to_plot.js"></script>
+    <script src="REST_CLIENT_POINTS_string_GOOD.js"></script>
+
+    <script>
+
+        var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // CREATE SCENE FUNCTION
+        createScene = function () {
+
+        // Engine and scene creation
+            scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color4(.7, .7, .7, .1); // Transparent clear color to see the gradient background
+    
+    
+        //     // Fog
+        // scene.fogMode = BABYLON.Scene.FOGMODE_LINEAR;
+        // scene.fogColor = scene.clearColor
+        // scene.fogStart =-500.0;
+        // scene.fogEnd = 500.0;
+
+
+            // Camera
+            var camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 150, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true)
+            camera.upperBetaLimit = Math.PI / 2;
+	camera.lowerRadiusLimit = 4;
+           
+            // LIGTHS
+            
+            // // Add HemiLight
+            var light1 = new BABYLON.HemisphericLight("hemiLight", new BABYLON.Vector3(0, 1, 0), scene);
+            light1.intensity = 0.2
+
+            // Add a directional light to the scene
+            var dlight = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(1, -2, -1), scene);
+            dlight.position = new BABYLON.Vector3(120, 120, 120);
+
+
+            // Spotlight
+            var splight = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(0, 4, 0), new BABYLON.Vector3(0, -1, 0), Math.PI / 3, 2, scene);
+            splight.intensity = 1;
+
+            // Shadow Generator
+            var shadowGenerator = new BABYLON.ShadowGenerator(2048, dlight);
+            shadowGenerator.useBlurExponentialShadowMap = true;
+            shadowGenerator.blurKernel = 32;
+
+
+	
+
+            // Create Gizmos to rotate lights
+            function CreateGizmos(customLight) {
+            const lightGizmo = new BABYLON.LightGizmo();
+            lightGizmo.scaleRatio = 2;
+            lightGizmo.light = customLight;
+
+            const gizmoManager = new BABYLON.GizmoManager(scene);
+            gizmoManager.positionGizmoEnabled = true;
+            gizmoManager.rotationGizmoEnabled = true;
+            gizmoManager.usePointerToAttachGizmos = false;
+            gizmoManager.attachToMesh(lightGizmo.attachedMesh);
+            }
+
+            CreateGizmos(dlight)
+            CreateGizmos(splight)
+
+
+
+
+
+
+
+
+            /*
+            // Sphere that casts and receives shadows
+            var sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 1}, scene);
+            sphere.position.y = 1;
+            sphere.castShadows = true;
+            shadowGenerator.addShadowCaster(sphere);
+
+            // Link light direction to the helper sphere rotation
+            helperSphere.rotationQuaternion = new BABYLON.Quaternion();
+            scene.onBeforeRenderObservable.add(() => {
+                // Update the spotlight position to be below the helper sphere
+                dlight.position = helperSphere.position.subtract(new BABYLON.Vector3(0, 2, 0));
+
+                // Update the spotlight direction based on helper sphere rotation
+                if (helperSphere.rotationQuaternion) {
+                    var forward = new BABYLON.Vector3(0, -1, 0);
+                    forward = BABYLON.Vector3.TransformNormal(forward, helperSphere.getWorldMatrix());
+                    dlight.direction = forward;
+                }
+            })
+
+            // Helper sphere
+            var helperSphere = BABYLON.MeshBuilder.CreateSphere("helperSphere", {diameter: 0.2}, scene);
+            helperSphere.position = dlight.position.clone();
+            helperSphere.position.y = dlight.position.y + 2; // Keep the helper sphere 2 meters above the spotlight
+
+            // Gizmo to move the light
+            var gizmo = new BABYLON.PositionGizmo();
+            //gizmo.attachedMesh = helperSphere;
+            gizmo.parent = dlight
+
+            // Rotation gizmo to rotate the light
+            var rotationGizmo = new BABYLON.RotationGizmo();
+            //rotationGizmo.attachedMesh = helperSphere;
+            rotationGizmo.parent = dlight;
+*/
+            return [scene, shadowGenerator, dlight]
+        } //END OF CREATE SCENE FUNCTION
+
+        // Create Scene
+        scene_array =  createScene() ;   scene = scene_array[0] ; shadowGenerator = scene_array[1] ; light = scene_array[2]
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+// define generic functions for plotting surfaces
+function f_surf1 (x,z) { return (x * x + z * z)}
+function f_surf2 (x,z) { return ((x  + z ) * -100)}
+
+
+recipy1 = {"color3" : [.4, 1, .6] , "alpha" : 1, "wireframe" : false}
+recipy2 = {"color3" : [1, .8, .6] , "alpha" : 1, "wireframe" : true}
+
+
+        // Add objects to the scene
+        create_ground(200, light, shadowGenerator) 
+
+        surface_smooth((x,z) => (x * x + z * z), scene, shadowGenerator, recipy1)
+
+
+        surface_smooth(f_surf2, scene, shadowGenerator, recipy2)
+    
+
+        //plot_REST_points(scene)  // show points received from the server as spheres
+
+        create_points(scene)  // generate random points and connect them with random lines
+
+
+        
+        
+// // Attempt to do reflections based on https://playground.babylonjs.com/#KA93U#243   
+/**********     
+var probe = new BABYLON.ReflectionProbe("main", 512, scene);
+
+
+var generateSatelliteMaterial = function (root, color, others) {
+            var material = new BABYLON.StandardMaterial("satelliteMat" + root.name, scene);
+            material.diffuseColor = color;
+            
+            var probe = new BABYLON.ReflectionProbe("satelliteProbe" + root.name, 512, scene);
+            for (var index = 0; index < others.length; index++) {
+                probe.renderList.push(others[index]);			
+            }
+            
+            material.reflectionTexture = probe.cubeTexture;
+            
+            material.reflectionFresnelParameters = new BABYLON.FresnelParameters();
+            material.reflectionFresnelParameters.bias = 0.02;
+            
+            root.material = material;
+            probe.attachToMesh(root);
+        }
+
+
+for (i in scene.meshes) {
+    probe.renderList.push(scene.meshes[i])
+
+scene.meshes[i].diffuseColor = new BABYLON.Color3(1, 0.5, 0.5);	
+        scene.meshes[i].reflectionTexture = probe.cubeTexture;
+        scene.meshes[i].reflectionFresnelParameters = new BABYLON.FresnelParameters();
+        scene.meshes[i].reflectionFresnelParameters.bias = 0.02;
+
+    generateSatelliteMaterial(scene.meshes[i],BABYLON.Color3.White(.1),scene.meshes[i])
+
+}
+*************/
+
+
+        //==============================================
+        // RENDER LOOP
+        engine.runRenderLoop(function () {
+            scene.render()
+        })
+
+        window.addEventListener("resize", function () {
+            engine.resize()
+        })
+        //==============================================
+
+
+
+
+    </script>
+
+
+</body>
+</html>
